@@ -5,32 +5,28 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   Inject,
   Query,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { ORDER_SERVICE } from 'src/config';
+import { NATS_SERVICE } from 'src/config';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { UUID } from 'crypto';
 import { OrderPaginationDto } from './dto';
-import { OrderStatus } from './enum/order.enum';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { StatusDto } from './dto/status.dto';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(
-    @Inject(ORDER_SERVICE) private readonly ordersClient: ClientProxy,
-  ) {}
+  constructor(@Inject(NATS_SERVICE) private readonly client: ClientProxy) {}
 
   @Post()
   async create(@Body() createOrderDto: CreateOrderDto) {
     try {
       const order = await firstValueFrom(
-        this.ordersClient.send('createOrder', createOrderDto),
+        this.client.send('createOrder', createOrderDto),
       );
 
       return order;
@@ -43,7 +39,7 @@ export class OrdersController {
   async findAll(@Query() orderPaginationDto: OrderPaginationDto) {
     try {
       const orders = await firstValueFrom(
-        this.ordersClient.send('findAllOrders', orderPaginationDto),
+        this.client.send('findAllOrders', orderPaginationDto),
       );
 
       return orders;
@@ -56,7 +52,7 @@ export class OrdersController {
   async findOne(@Param('id', ParseUUIDPipe) id: UUID) {
     try {
       const order = await firstValueFrom(
-        this.ordersClient.send('findOneOrder', { id }),
+        this.client.send('findOneOrder', { id }),
       );
 
       return order;
@@ -72,7 +68,7 @@ export class OrdersController {
   ) {
     try {
       const order = await firstValueFrom(
-        this.ordersClient.send('findAllOrders', {
+        this.client.send('findAllOrders', {
           ...paginationDto,
           status: statusDto.status,
         }),
@@ -91,7 +87,7 @@ export class OrdersController {
   ) {
     try {
       const order = await firstValueFrom(
-        this.ordersClient.send('changeOrderStatus', {
+        this.client.send('changeOrderStatus', {
           id,
           status: statusDto.status,
         }),
